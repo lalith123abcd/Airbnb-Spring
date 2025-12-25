@@ -1,28 +1,26 @@
-package com.example.AirbnbSpring.model;
+package com.example.AirbnbSpring.model.readModels;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Entity
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class Airbnb {
+import java.util.List;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class AirbnbReadModel {
     private Long id;
 
     private String name;
 
     private String description;
 
-    @Column(nullable = false)
-    private String pricePerNight;
-
     private String location;
+
+    private Long pricePerNight;
+
+    private List<AvailabilityReadModel> availability;
 }

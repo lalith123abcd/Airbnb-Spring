@@ -15,17 +15,19 @@ public class Booking {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private String id;
+    private Long id;
 
-    @Column(nullable = false)
+
     @ManyToOne
-    private String userId;
+    @JoinColumn(name = "userId",nullable = false)
+    private User user;
 
-    @Column(nullable = false)
-    @ManyToMany
-    private String airbnbId;
 
-    private String totalPrice;
+    @ManyToOne
+    @JoinColumn(name = "airbnbId",nullable = false)
+    private Airbnb airbnb;
+
+    private Long totalPrice;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
