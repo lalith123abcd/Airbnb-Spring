@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -27,7 +29,7 @@ public class Booking {
     @JoinColumn(name = "airbnbId",nullable = false)
     private Airbnb airbnb;
 
-    private Long totalPrice;
+    private double totalPrice;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -36,6 +38,9 @@ public class Booking {
 
     @Column(unique = true)
     private String idempotencyKey;
+
+    private LocalDate checkInDate;
+    private LocalDate checkOutDate;
 
     public enum BookingStatus{
         PENDING,CANCELLED,CONFIRMED

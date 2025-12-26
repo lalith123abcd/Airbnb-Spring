@@ -22,7 +22,7 @@ public class Airbnb {
     private String description;
 
     @Column(nullable = false)
-    private String pricePerNight;
+    private double pricePerNight;
 
     private String location;
 }

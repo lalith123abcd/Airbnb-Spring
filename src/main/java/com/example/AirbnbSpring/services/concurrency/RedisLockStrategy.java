@@ -1,0 +1,67 @@
+package com.example.AirbnbSpring.services.concurrency;
+
+import com.example.AirbnbSpring.model.Availability;
+import com.example.AirbnbSpring.repository.writes.AvailabilityWriteRepository;
+import lombok.Locked;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+
+import java.time.Duration;
+import java.time.LocalDate;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class RedisLockStrategy implements ConcurrencyControlStrategy{
+
+    private static final String  LOCK_KEY_PREFIX="lock:availability";
+    private static final Duration LOCK_TIMEOUT=Duration.ofMinutes(2);
+
+
+    private final RedisTemplate<String,String> redisTemplate;
+    private final AvailabilityWriteRepository availabilityWriteRepository;
+
+    @Override
+    public void releaseLock(Long airbnbId, LocalDate checkInDate, LocalDate checkOutDate) {
+
+        String lockKey=generateLockKey(airbnbId,checkInDate,checkOutDate);
+        redisTemplate.delete(lockKey);
+
+
+    }
+
+    @Override
+    public List<Availability> lockAndCheckAvailability(Long airbnbId, LocalDate checkInDate, LocalDate checkOutDate,Long userId) {
+
+        Long bookedSlots=availabilityWriteRepository.countByAirbnbIdAndDateBetweenAndBookingIdIsNotNull(airbnbId,checkInDate,checkOutDate);
+
+        if(bookedSlots>0){
+            throw new RuntimeException("airbnb with id is not available for all given dates," +
+                    "try some new dates");
+        }
+        String lockKey=generateLockKey(airbnbId,checkInDate,checkOutDate);
+        boolean locked=redisTemplate.opsForValue().setIfAbsent(lockKey,userId.toString(),LOCK_TIMEOUT);
+
+        if(!locked){
+            throw new IllegalStateException("failed to acqire booking for the given dates");
+
+        }
+        try{
+            return availabilityWriteRepository.findByAirbnbIdAndDateBetween(airbnbId,checkInDate,checkOutDate);
+
+        } catch (Exception e) {
+            releaseLock(airbnbId,checkInDate,checkOutDate);
+            throw e;
+        }
+
+    }
+
+    private String generateLockKey(Long airbnbId,LocalDate checkInDate,LocalDate checkOutDate){
+
+        return LOCK_KEY_PREFIX+airbnbId+":"+checkInDate+":"+checkOutDate;
+
+
+    }
+
+}
