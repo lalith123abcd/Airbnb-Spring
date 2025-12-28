@@ -62,7 +62,9 @@ public class BookingService implements IBookingService {
         double pricePerNight=airbnb.getPricePerNight();
 
         double totalPrice=pricePerNight*nights;
-        User user=userWriteRepository.findById(createBookingRequest.getUserId());
+        User user=userWriteRepository.findById(createBookingRequest.getUserId()).orElseThrow(
+                ()-> new RuntimeException("user not found")
+        );
         String idempotencyKey=UUID.randomUUID().toString();
 
         log.info("creating booking with airbnb{} with checkInDate{} and checkOutDate{}" +

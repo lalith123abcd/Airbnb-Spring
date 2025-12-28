@@ -1,5 +1,6 @@
 package com.example.AirbnbSpring.services;
 
+import com.example.AirbnbSpring.mapper.BookingMapper;
 import com.example.AirbnbSpring.model.Booking;
 import com.example.AirbnbSpring.model.readModels.BookingReadModel;
 import com.example.AirbnbSpring.repository.reads.RedisReadRepository;
@@ -14,6 +15,7 @@ import java.util.Optional;
 public class IdempotencyService implements IIdempotencyServices{
 
     private final RedisReadRepository redisReadRepository;
+    private final BookingMapper bookingMapper;
 
     private final BookingWriteRepository bookingWriteRepository;
     @Override
@@ -26,9 +28,13 @@ public class IdempotencyService implements IIdempotencyServices{
         BookingReadModel bookingReadModel=redisReadRepository.findBookingByIdempotencyKey(idempotencyKey);
 
         if(bookingReadModel!=null){
+          Booking booking=  bookingMapper.toEntity(bookingReadModel);
+
+          return Optional.of(booking);
 
         }
 
         bookingWriteRepository.findByIdempotencyKey(idempotencyKey);
+
     }
 }

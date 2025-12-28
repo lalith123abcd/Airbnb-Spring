@@ -2,6 +2,8 @@ package com.example.AirbnbSpring.repository.writes;
 
 import com.example.AirbnbSpring.model.Availability;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -19,4 +21,8 @@ public interface AvailabilityWriteRepository extends JpaRepository<Availability,
     // SELECT COUNT(*) FROM availability WHERE airbnb_id = airbnbdId AND date BETWEEN startDate AND endDate AND booking_id IS NOT NULL;
 
     Long countByAirbnbIdAndDateBetweenAndBookingIdIsNotNull(Long airbnbId, LocalDate startDate, LocalDate endDate);
+
+    @Modifying
+    @Query("UPDATE AVAILABILITY a SET a.bookingId=:bookingId WHERE a.airbnbId=:airbnbId AND a.date BETWEEN :startDate AND :endDate")
+    void updateBookingIdByAirbnbIdAndDateBetween(Long bookingId, Long airbnbId, LocalDate startDate, LocalDate endDate);
 }

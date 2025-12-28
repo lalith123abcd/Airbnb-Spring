@@ -11,5 +11,5 @@ public interface UserWriteRepository extends JpaRepository<User,Long> {
 
 
    Optional<User> findByEmail(String email);
-   User findById(Long id);
+   Optional<User> findById(Long id);
 }
