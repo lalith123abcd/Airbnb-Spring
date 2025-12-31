@@ -4,7 +4,10 @@ import com.example.AirbnbSpring.model.Booking;
 import com.example.AirbnbSpring.repository.writes.BookingWriteRepository;
 import com.example.AirbnbSpring.saga.SagaEvent;
 import com.example.AirbnbSpring.saga.SagaEventPublisher;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -12,12 +15,16 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class BookingEventHandler {
 
     private final BookingWriteRepository bookingWriteRepository;
     private final SagaEventPublisher sagaEventPublisher;
 
+
+    @Transactional
     public void handleBookingConfirmRequested(SagaEvent sagaEvent){
+        log.info("🔥 BookingEventHandler called with payload {}", sagaEvent.getPayload());
 
         try{
             Map<String ,Object> payload=sagaEvent.getPayload();
@@ -45,6 +52,7 @@ public class BookingEventHandler {
 
     }
 
+    @Transactional
     public void handleBookingCancelRequested(SagaEvent sagaEvent){
         try{
             Map<String ,Object> payload=sagaEvent.getPayload();

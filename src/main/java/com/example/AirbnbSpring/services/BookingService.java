@@ -11,16 +11,18 @@ import com.example.AirbnbSpring.repository.writes.AirbnbWriteRepository;
 import com.example.AirbnbSpring.repository.writes.AvailabilityWriteRepository;
 import com.example.AirbnbSpring.repository.writes.BookingWriteRepository;
 import com.example.AirbnbSpring.repository.writes.UserWriteRepository;
+import com.example.AirbnbSpring.saga.SagaEventPublisher;
 import com.example.AirbnbSpring.services.concurrency.ConcurrencyControlStrategy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import jakarta.transaction.Transactional;
 import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -37,6 +39,9 @@ public class BookingService implements IBookingService {
 
     private final UserWriteRepository userWriteRepository;
     private final RedisWriteRepository redisWriteRepository;
+
+    private final IIdempotencyServices iIdempotencyServices;
+    private final SagaEventPublisher sagaEventPublisher;
 
 
     @Override
@@ -83,6 +88,9 @@ public class BookingService implements IBookingService {
                 .build();
 
         booking=bookingWriteRepository.save(booking);
+        log.info("✅ Booking status updated to CONFIRMED in MySQL for bookingId={}",
+                booking.getId());
+
 
         redisWriteRepository.writeBookingReadModel(booking);
 
@@ -92,7 +100,38 @@ public class BookingService implements IBookingService {
     }
 
     @Override
+    @Transactional
     public Booking updateBooking(UpdateBookingRequest updateBookingRequest) {
-        return null;
+        log.info("Updating booking for idempotency key {}", updateBookingRequest.getIdempotencyKey());
+        Booking booking = iIdempotencyServices.findBookingByIdempotencyKey(updateBookingRequest.getIdempotencyKey())
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+        log.info("Booking found for idempotency key {}", updateBookingRequest.getIdempotencyKey());
+        log.info("Booking status: {}", booking.getBookingStatus());
+        if(booking.getBookingStatus() != Booking.BookingStatus.PENDING) {
+            throw new RuntimeException("Booking is not pending");
+
+        }
+        log.info("📤 Publishing saga event: BOOKING_CONFIRM_REQUESTED for bookingId={}",
+                booking.getId());
+
+
+        if(updateBookingRequest.getBookingStatus() == Booking.BookingStatus.CONFIRMED) { // TODO: This also violates a SOLID principle, please resolve: https://github.com/singhsanket143/AirbnbSpring/issues/13
+            sagaEventPublisher.publishEvent(
+                    "BOOKING_CONFIRM_REQUESTED",
+                    "CONFIRM_BOOKING",
+                    Map.of(
+                            "bookingId", booking.getId(),
+                            "airbnbId", booking.getAirbnb().getId(), // ✅ ONLY ID
+                            "checkInDate", booking.getCheckInDate().toString(),
+                            "checkOutDate", booking.getCheckOutDate().toString()
+                    )
+            );
+
+        } else if(updateBookingRequest.getBookingStatus() == Booking.BookingStatus.CANCELLED) {
+            sagaEventPublisher.publishEvent("BOOKING_CANCEL_REQUESTED", "CANCEL_BOOKING", Map.of("bookingId", booking.getId(), "airbnbId", booking.getAirbnb().getId(), "checkInDate", booking.getCheckInDate(), "checkOutDate", booking.getCheckOutDate()));
+        }
+
+        return booking;
+
     }
 }

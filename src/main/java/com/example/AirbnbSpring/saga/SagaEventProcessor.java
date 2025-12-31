@@ -3,15 +3,21 @@ package com.example.AirbnbSpring.saga;
 import com.example.AirbnbSpring.services.handlers.AvailabilityEventHandler;
 import com.example.AirbnbSpring.services.handlers.BookingEventHandler;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class SagaEventProcessor {
     private final BookingEventHandler bookingEventHandler;
     private final AvailabilityEventHandler availabilityEventHandler;
 
+
     public void processEvent(SagaEvent sagaEvent) {
+        log.info("🧭 SagaEventProcessor received eventType={}", sagaEvent.getEventType());
+
+
 
         switch (sagaEvent.getEventType()){
             case "BOOKING_CREATED":

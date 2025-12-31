@@ -1,9 +1,11 @@
 package com.example.AirbnbSpring.saga;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
+
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -11,15 +13,15 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class SagaEventPublisher {
 
-    private static final String SAGA_QUEUE="saga:events";
+    private static final String SAGA_QUEUE = "saga:events";
 
-    private final RedisTemplate<String,String> redisTemplate;
+    private final RedisTemplate<String, String> redisTemplate;
 
     private final ObjectMapper objectMapper;
-
-    public void publishEvent(String eventType, String step, Map<String,Object> payload){
+    public void publishEvent(String eventType, String step, Map<String, Object> payload) {
         SagaEvent sagaEvent = SagaEvent.builder()
                 .sagaId(UUID.randomUUID().toString())
                 .eventType(eventType)
@@ -32,11 +34,13 @@ public class SagaEventPublisher {
         try {
             String eventJson = objectMapper.writeValueAsString(sagaEvent);
             redisTemplate.opsForList().rightPush(SAGA_QUEUE, eventJson);
+            log.info("📦 SagaEvent pushed to Redis queue={}, eventType={}", SAGA_QUEUE, eventType);
         } catch (Exception e) {
             throw new RuntimeException("Failed to publish saga event", e);
         }
     }
-    }
+
+}
 
 
 

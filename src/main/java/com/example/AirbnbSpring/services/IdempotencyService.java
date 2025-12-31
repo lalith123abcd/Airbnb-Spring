@@ -20,7 +20,7 @@ public class IdempotencyService implements IIdempotencyServices{
     private final BookingWriteRepository bookingWriteRepository;
     @Override
     public boolean isIdempotencyKeyUsed(String idempotencyKey) {
-        return false;
+        return this.findBookingByIdempotencyKey(idempotencyKey).isPresent();
     }
 
     @Override
@@ -34,7 +34,7 @@ public class IdempotencyService implements IIdempotencyServices{
 
         }
 
-        bookingWriteRepository.findByIdempotencyKey(idempotencyKey);
+       return bookingWriteRepository.findByIdempotencyKey(idempotencyKey);
 
     }
 }
